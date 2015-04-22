@@ -1,155 +1,175 @@
-var canvas, context, element, activeCells;
+//------------------------ define the World class ----------------------
+function World (config) {
+  this.canvas = document.getElementById('b');
+  this.context = this.canvas.getContext('2d');
+  this.element = {};
+  this.activeCells = {};
 
-function draw_b() {
-  canvas = document.getElementById('b');
-  context = canvas.getContext('2d');
+  this.canvas.width = config.width;
+  this.canvas.height = config.height;
 
-  canvas.width = 500;
-  canvas.height = 400;
+  this.element.size = config.cellSize;
+  this.element.offset = config.offset;
+}
 
-  element = {};
-  element.size = 10;
-  element.offset = 0;
+World.prototype.initWorld = function () {
+  this.context.clearRect(this.element.offset, this.element.offset, this.canvas.width, this.canvas.height); //clear canvas
+  this.activeCells = {};    //clear active cells
 
-  activeCells = {};
-
-  for (var i = element.offset; i < canvas.width; i+=element.size) {
-    context.moveTo(i, 0);
-    context.lineTo(i, canvas.height);
+  for (var i = this.element.offset; i < this.canvas.width; i+=this.element.size) {
+    this.context.moveTo(i, 0);
+    this.context.lineTo(i, this.canvas.height);
   }
 
-  for (var j = element.offset; j < canvas.height; j+=element.size) {
-    context.moveTo(0, j);
-    context.lineTo(canvas.width, j);
+  for (var j = this.element.offset; j < this.canvas.height; j+=this.element.size) {
+    this.context.moveTo(0, j);
+    this.context.lineTo(this.canvas.width, j);
   }
 
-  context.strokeStyle = '#eee';
-  context.stroke();
+  this.context.strokeStyle = '#eee';
+  this.context.stroke();
 
-  updatePosHelper(null);
-
-  canvas.addEventListener('mousemove', mouseMove, false);
-  canvas.addEventListener('click', mouseClick, false);
+  this.updateMousePosition(null);
 }
 
-function mouseMove(e) {
-  var cell = getRelativePosHelper(e);
-  updatePosHelper(cell);
+World.prototype.updateMousePosition = function (pos) {
+  text = {};
+  text.height = 15;
+  text.width = 60;
+  text.x = this.canvas.width - text.width;
+  text.y = this.canvas.height - text.height;
+  this.context.clearRect(text.x, text.y, text.width, text.height);
+  if(pos === null){
+    text.val = '(0, 0)';
+  }else{
+    text.val = '(' + pos.x + ', ' + pos.y + ')';
+  }
+  this.context.textBaselin = 'top';
+  this.context.fillText(text.val, text.x, this.canvas.height - 3);
 }
 
-function mouseClick(e) {
-  var cell = getRelativePosHelper(e);
-  cellActiveHelper(cell);
+World.prototype.getRelativePisition = function (e) {
+    var pos = {};
+    //get the size of canvas and its potision relative to the viewport
+    var rect = this.canvas.getBoundingClientRect();  
+    pos.x = e.clientX - rect.left;
+    pos.y = e.clientY - rect.top;
+
+    //calculate the relative position
+    pos.x -= this.element.offset;
+    pos.y -= this.element.offset;
+    var x = pos.x, y = pos.y;
+    pos.x = Math.floor(y/this.element.size);
+    pos.y = Math.floor(x/this.element.size);
+    return pos;
 }
 
-function nextGeneration() {
-  // console.log(activeCells);
+World.prototype.manageActiveCell = function (cellObj) {
+  for (var i=-1; i<=1; i++) {
+    for (var j=-1; j<=1; j++) {
+      if (!(i === 0 && j === 0)) {
+        this.addCellHelper(JSON.stringify({x: cellObj.x+i, y: cellObj.y+j}), false);
+      }
+    }
+  }
+  this.addCellHelper(JSON.stringify(cellObj), true);
+  this.drawCellHelper(cellObj);
+}
+
+World.prototype.addCellHelper = function (cellStr, val){
+  if(val)
+    this.activeCells[cellStr] = val;
+  else if(!(cellStr in this.activeCells)) 
+    this.activeCells[cellStr] = val;
+}
+
+World.prototype.checkCellHelper = function (cellStr) {
+  // console.log(cellStr);
+  if((cellStr in this.activeCells) && this.activeCells[cellStr]){
+    return true;
+  }
+  return false;
+}
+
+World.prototype.drawCellHelper = function (cellObj) {
+  this.context.fillRect(cellObj.y * this.element.size, cellObj.x * this.element.size, this.element.size, this.element.size);
+}
+
+World.prototype.clearCellHelper = function (cellObj) {
+  var offset = 0.1;
+  this.context.clearRect(cellObj.y * this.element.size + offset, cellObj.x * this.element.size + offset, this.element.size - offset, this.element.size - offset);
+}
+
+World.prototype.nextGeneration = function () {
   //for each cell in activeCells, check #of neighbours and update cell status
   var life = [];
   var dead = [];
-  for (var c in activeCells) {
+  for (var c in this.activeCells) {
     var neighbours = 0;
     var current = JSON.parse(c);    //current cell object
     for (var i=-1; i<=1; i++){
       for (var j=-1; j<=1; j++){
         if (!(i === 0 && j === 0)) {
           var checking = JSON.stringify({x: current.x+i, y: current.y+j});
-          if (checkCellHelper(checking)) {
+          if (this.checkCellHelper(checking)) {
             neighbours += 1;
           }
         }
       }
     }
-    // console.log('c=' + c + ', neighbours=' + neighbours);
-    if (activeCells[c] && neighbours < 2)
+    if (this.activeCells[c] && neighbours < 2)
       dead.push(c);
-    else if (activeCells[c] && (neighbours === 2 || neighbours === 3))
+    else if (this.activeCells[c] && (neighbours === 2 || neighbours === 3))
       life.push(c);
-    else if (activeCells[c] && neighbours > 3)
+    else if (this.activeCells[c] && neighbours > 3)
       dead.push(c);
-    else if (!activeCells[c] && neighbours === 3)
+    else if (!this.activeCells[c] && neighbours === 3)
       life.push(c);
   }
-  // console.log('dead=' + dead);
-  // console.log('life=' + life);
   for (var i=0; i<life.length; i++){
-    cellActiveHelper(JSON.parse(life[i]));
+    this.manageActiveCell(JSON.parse(life[i]));
   }
   for (var i=0; i<dead.length; i++){
-    activeCells[dead[i]] = false;
-    clearCellHelper(JSON.parse(dead[i]));
+    this.activeCells[dead[i]] = false;
+    this.clearCellHelper(JSON.parse(dead[i]));
   }
 }
 
-function getRelativePosHelper(e) {
-    var pos = {};
-    //get the size of canvas and its potision relative to the viewport
-    var rect = canvas.getBoundingClientRect();  
-    pos.x = e.clientX - rect.left;
-    pos.y = e.clientY - rect.top;
 
-    //calculate the relative position
-    pos.x -= element.offset;
-    pos.y -= element.offset;
-    var x = pos.x, y = pos.y;
-    pos.x = Math.floor(y/element.size);
-    pos.y = Math.floor(x/element.size);
-    return pos;
-}
 
-function updatePosHelper(pos) {
-  text = {};
-  text.height = 15;
-  text.width = 60;
-  text.x = canvas.width - text.width;
-  text.y = canvas.height - text.height;
-  context.clearRect(text.x, text.y, text.width, text.height);
-  if(pos === null){
-    text.val = '(0, 0)';
-  }else{
-    text.val = '(' + pos.x + ', ' + pos.y + ')';
+//---------------------------- program starts here --------------------------------
+var world;
+
+function draw_b () {
+  var worldConfig = {
+    width: 500,
+    height: 400,
+    cellSize: 10,
+    offset: 0
   }
-  context.textBaselin = 'top';
-  context.fillText(text.val, text.x, canvas.height - 3);
+  world = new World(worldConfig);
+  world.initWorld();
+
+  world.canvas.addEventListener('mousemove', mouseMove, false);
+  world.canvas.addEventListener('click', mouseClick, false);
 }
 
-function cellActiveHelper(cellObj) {
-  for (var i=-1; i<=1; i++) {
-    for (var j=-1; j<=1; j++) {
-      if (!(i === 0 && j === 0)) {
-        addCellHelper(JSON.stringify({x: cellObj.x+i, y: cellObj.y+j}), false);
-      }
-    }
-  }
-  addCellHelper(JSON.stringify(cellObj), true);
-  drawCellHelper(cellObj);
-  // console.log(activeCells);
+function mouseMove (e) {
+  var cell = world.getRelativePisition(e);
+  world.updateMousePosition(cell);
 }
 
-/**
-* @description If val === true: add or change cell state to true
-*              otherwise: add cell if cell not yet exists
-*/
-function addCellHelper(cellStr, val){
-  if(val)
-    activeCells[cellStr] = val;
-  else if(!(cellStr in activeCells)) 
-    activeCells[cellStr] = val;
+function mouseClick (e) {
+  var cell = world.getRelativePisition(e);
+  world.manageActiveCell(cell);
 }
 
-function checkCellHelper(cellStr) {
-  // console.log(cellStr);
-  if((cellStr in activeCells) && activeCells[cellStr]){
-    return true;
-  }
-  return false;
+function btnNext () {
+  world.nextGeneration();
 }
 
-function drawCellHelper(cellObj) {
-  context.fillRect(cellObj.y * element.size, cellObj.x * element.size, element.size, element.size);
+function btnClear () {
+  world.initWorld();
 }
 
-function clearCellHelper(cellObj) {
-  var offset = 0.1;
-  context.clearRect(cellObj.y * element.size + offset, cellObj.x * element.size + offset, element.size - offset, element.size - offset);
-}
+
