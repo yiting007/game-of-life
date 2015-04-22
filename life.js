@@ -30,14 +30,6 @@ function draw_b() {
 
   canvas.addEventListener('mousemove', mouseMove, false);
   canvas.addEventListener('click', mouseClick, false);
-
-  activeCells.format = function(){  //???
-   for (var k in activeCells) {
-     if (activeCells.hasOwnProperty(k)) {
-       console.log(k + ':' + activeCells[k]);
-     }
-   }
-  };
 }
 
 function mouseMove(e) {
@@ -51,37 +43,41 @@ function mouseClick(e) {
 }
 
 function nextGeneration() {
+  // console.log(activeCells);
   //for each cell in activeCells, check #of neighbours and update cell status
   var life = [];
   var dead = [];
-  for (cell in activeCells) {
+  for (var c in activeCells) {
     var neighbours = 0;
-    var current = {};
+    var current = JSON.parse(c);    //current cell object
     for (var i=-1; i<=1; i++){
       for (var j=-1; j<=1; j++){
-        if ((i === 0 && j === 0)) {
-          current = {x: cell.x+i, y: cell.y+j};
-          neighbours += checkCellHelper(current) ? 1 : 0;
+        if (!(i === 0 && j === 0)) {
+          var checking = JSON.stringify({x: current.x+i, y: current.y+j});
+          if (checkCellHelper(checking)) {
+            neighbours += 1;
+          }
         }
       }
     }
-    console.log('neighbours=' + neighbours);
-    if (activeCells[current] && neighbours < 2)
-      dead.push(current);
-    else if (activeCells[current] && (neighbours === 2 || neighbours === 3))
-      life.push(current);
-    else if (activeCells[current] && neighbours > 3)
-      dead.push(current);
-    else if (!activeCells[current] && neighbours === 3)
-      life.push(current);
+    // console.log('c=' + c + ', neighbours=' + neighbours);
+    if (activeCells[c] && neighbours < 2)
+      dead.push(c);
+    else if (activeCells[c] && (neighbours === 2 || neighbours === 3))
+      life.push(c);
+    else if (activeCells[c] && neighbours > 3)
+      dead.push(c);
+    else if (!activeCells[c] && neighbours === 3)
+      life.push(c);
   }
-  for (cell in life) {
-    activeCells[cell] = true;
-    drawCellHelper(cell);
+  // console.log('dead=' + dead);
+  // console.log('life=' + life);
+  for (var i=0; i<life.length; i++){
+    cellActiveHelper(JSON.parse(life[i]));
   }
-  for (cell in dead) {
-    activeCells[cell] = false;
-    clearCellHelper(cell);
+  for (var i=0; i<dead.length; i++){
+    activeCells[dead[i]] = false;
+    clearCellHelper(JSON.parse(dead[i]));
   }
 }
 
@@ -117,39 +113,43 @@ function updatePosHelper(pos) {
   context.fillText(text.val, text.x, canvas.height - 3);
 }
 
-function cellActiveHelper(cell) {
+function cellActiveHelper(cellObj) {
   for (var i=-1; i<=1; i++) {
     for (var j=-1; j<=1; j++) {
       if (!(i === 0 && j === 0)) {
-        // console.log('add cell: (' + (cell.x+i) + ', ' + (cell.y+j) + ')');
-        addCellHelper({x: cell.x+i, y: cell.y+j}, false);
+        addCellHelper(JSON.stringify({x: cellObj.x+i, y: cellObj.y+j}), false);
       }
     }
   }
-  addCellHelper(cell, true);
-  drawCellHelper(cell);
+  addCellHelper(JSON.stringify(cellObj), true);
+  drawCellHelper(cellObj);
+  // console.log(activeCells);
 }
 
-function addCellHelper(cell, val){
-  if(cell.x < 0 || cell.y < 0)  //check lower bound
-    return;
-  activeCells[cell] = val;
+/**
+* @description If val === true: add or change cell state to true
+*              otherwise: add cell if cell not yet exists
+*/
+function addCellHelper(cellStr, val){
+  if(val)
+    activeCells[cellStr] = val;
+  else if(!(cellStr in activeCells)) 
+    activeCells[cellStr] = val;
 }
 
-function checkCellHelper(cell) {
-  if(cell.x < 0 || cell.y < 0)
-    return false;
-  if(!(cell in activeCells))
-    return false;
-  if(!activeCells[cell])
-    return false;
-  return true;
+function checkCellHelper(cellStr) {
+  // console.log(cellStr);
+  if((cellStr in activeCells) && activeCells[cellStr]){
+    return true;
+  }
+  return false;
 }
 
-function drawCellHelper(cell) {
-  context.fillRect(cell.y * element.size, cell.x * element.size, element.size, element.size);
+function drawCellHelper(cellObj) {
+  context.fillRect(cellObj.y * element.size, cellObj.x * element.size, element.size, element.size);
 }
 
-function clearCellHelper(cell) {
-  context.clearRect(cell.y * element.size, cell.x * element.size, element.size, element.size);
+function clearCellHelper(cellObj) {
+  var offset = 0.1;
+  context.clearRect(cellObj.y * element.size + offset, cellObj.x * element.size + offset, element.size - offset, element.size - offset);
 }
