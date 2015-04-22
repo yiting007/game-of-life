@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<link rel="stylesheet" href="life.css">
+<script src="life.js"></script>
+</head>
+
+<body onload="draw_b()">
+    <div id="wrap">
+        <div id="left_col">
+            <canvas class="c" id="b" width="500" height="375"></canvas>
+        </div>
+        <div id="right_col">
+            <ol>
+                <li>Any live cell with fewer than two live neighbours dies, as if caused by under-population.</li>
+                <li>Any live cell with two or three live neighbours lives on to the next generation.</li>
+                <li>Any live cell with more than three live neighbours dies, as if by overcrowding.</li>
+                <li>Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.</li>
+            </ol>
+            <button id="btnNext" onclick="nextGeneration()">next</button>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+.c {
+  border-style: solid;
+  border-width: 1px;
+}
+
+#wrap {
+    width: 1300px;
+    margin: 0 auto;
+}
+
+#left_col {
+    float: left;
+    width: 600px;
+}
+
+#right_col {
+    float: right;
+    width: 700px;
+}
