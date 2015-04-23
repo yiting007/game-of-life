@@ -10,11 +10,16 @@ function World (config) {
 
   this.element.size = config.cellSize;
   this.element.offset = config.offset;
+
+  this.generationCounter = 0;
+  this.liveCellsCounter = 0;
 }
 
 World.prototype.initWorld = function () {
   this.context.clearRect(this.element.offset, this.element.offset, this.canvas.width, this.canvas.height); //clear canvas
   this.activeCells = {};    //clear active cells
+  this.generationCounter = 0;
+  this.liveCellsCounter = 0;
 
   for (var i = this.element.offset; i < this.canvas.width; i+=this.element.size) {
     this.context.moveTo(i, 0);
@@ -64,7 +69,7 @@ World.prototype.getRelativePisition = function (e) {
     return pos;
 }
 
-World.prototype.manageActiveCell = function (cellObj) {
+World.prototype.manageActiveCell = function (cellObj, click) {
   for (var i=-1; i<=1; i++) {
     for (var j=-1; j<=1; j++) {
       if (!(i === 0 && j === 0)) {
@@ -72,15 +77,23 @@ World.prototype.manageActiveCell = function (cellObj) {
       }
     }
   }
+  var cellStr = JSON.stringify(cellObj);
+  if (cellStr in this.activeCells && this.activeCells[cellStr]) {
+    return;
+  }
   this.addCellHelper(JSON.stringify(cellObj), true);
   this.drawCellHelper(cellObj);
+  if (click) {
+    this.liveCellsCounter++;
+  }
 }
 
 World.prototype.addCellHelper = function (cellStr, val){
-  if(val)
+  if(val){
     this.activeCells[cellStr] = val;
-  else if(!(cellStr in this.activeCells)) 
+  }else if(!(cellStr in this.activeCells)){
     this.activeCells[cellStr] = val;
+  }
 }
 
 World.prototype.checkCellHelper = function (cellStr) {
@@ -100,7 +113,20 @@ World.prototype.clearCellHelper = function (cellObj) {
   this.context.clearRect(cellObj.y * this.element.size + offset, cellObj.x * this.element.size + offset, this.element.size - offset, this.element.size - offset);
 }
 
+World.prototype.hasLiveCells = function () {
+  if (Object.keys(this.activeCells).length === 0) {
+    return false;
+  }
+  for (var c in this.activeCells) {
+    if (this.activeCells.hasOwnProperty(c) && this.activeCells[c]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 World.prototype.nextGeneration = function () {
+  this.generationCounter++;
   //for each cell in activeCells, check #of neighbours and update cell status
   var life = [];
   var dead = [];
@@ -117,17 +143,21 @@ World.prototype.nextGeneration = function () {
         }
       }
     }
-    if (this.activeCells[c] && neighbours < 2)
+    if (this.activeCells[c] && neighbours < 2){
       dead.push(c);
-    else if (this.activeCells[c] && (neighbours === 2 || neighbours === 3))
+      this.liveCellsCounter--;
+    }else if (this.activeCells[c] && (neighbours === 2 || neighbours === 3)){
       life.push(c);
-    else if (this.activeCells[c] && neighbours > 3)
+    }else if (this.activeCells[c] && neighbours > 3){
       dead.push(c);
-    else if (!this.activeCells[c] && neighbours === 3)
+      this.liveCellsCounter--;
+    }else if (!this.activeCells[c] && neighbours === 3){
       life.push(c);
+      this.liveCellsCounter++;
+    }
   }
   for (var i=0; i<life.length; i++){
-    this.manageActiveCell(JSON.parse(life[i]));
+    this.manageActiveCell(JSON.parse(life[i]), false);
   }
   for (var i=0; i<dead.length; i++){
     this.activeCells[dead[i]] = false;
@@ -138,12 +168,12 @@ World.prototype.nextGeneration = function () {
 
 
 //---------------------------- program starts here --------------------------------
-var world;
+var world, autoRun;
 
 function draw_b () {
   var worldConfig = {
-    width: 500,
-    height: 400,
+    width: 900,
+    height: 700,
     cellSize: 10,
     offset: 0
   }
@@ -161,15 +191,38 @@ function mouseMove (e) {
 
 function mouseClick (e) {
   var cell = world.getRelativePisition(e);
-  world.manageActiveCell(cell);
+  world.manageActiveCell(cell, true);
+  document.getElementById('liveCnt').innerHTML = world.liveCellsCounter;
 }
 
 function btnNext () {
-  world.nextGeneration();
+  if (world.hasLiveCells()) {
+    world.nextGeneration();
+    updateInfo();
+  }
 }
 
 function btnClear () {
   world.initWorld();
+  clearInterval(autoRun);
+  updateInfo();
 }
 
+function btnAutoRun () {
+  autoRun = setInterval(function () {
+    if (!world.hasLiveCells()) {
+      clearInterval(this);
+    }
+    world.nextGeneration();
+    updateInfo();
+  }, 100);
+}
 
+function btnStop () {
+  clearInterval(autoRun);
+}
+
+function updateInfo () {
+  document.getElementById('generationCnt').innerHTML = world.generationCounter;
+  document.getElementById('liveCnt').innerHTML = world.liveCellsCounter;
+}

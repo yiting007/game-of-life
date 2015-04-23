@@ -9,7 +9,7 @@
 <body onload="draw_b()">
     <div id="wrap">
         <div id="left_col">
-            <canvas class="c" id="b" width="500" height="375"></canvas>
+            <canvas class="c" id="b"></canvas>
         </div>
         <div id="right_col">
             <ol>
@@ -18,8 +18,18 @@
                 <li>Any live cell with more than three live neighbours dies, as if by overcrowding.</li>
                 <li>Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.</li>
             </ol>
-            <button id="btnNext" onclick="btnNext()">next</button>
-            <button id="btnClear" onclick="btnClear()">clear</button>
+            <div id="buttons">
+                <button id="btnNext" onclick="btnNext()">next</button>
+                <button id="btnClear" onclick="btnClear()">clear</button>
+                <button id="btnAutoRun" onclick="btnAutoRun()">auto</button>
+                <button id="btnStop" onclick="btnStop()">stop</button>
+            </div>
+            <div>
+                <ul>
+                    <li>#of live cells: <span id="liveCnt"></span></li>
+                    <li>#of generations: <span id="generationCnt"></span></li>
+            </ul>
+            </div>
         </div>
     </div>
 </body>
