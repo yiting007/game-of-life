@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<script type="text/javascript">
 //------------------------ define the World class ----------------------
 function World (config) {
   this.canvas = document.getElementById('b');
@@ -226,3 +233,33 @@ function updateInfo () {
   document.getElementById('generationCnt').innerHTML = world.generationCounter;
   document.getElementById('liveCnt').innerHTML = world.liveCellsCounter;
 }
+</script>
+<body onload="draw_b()">
+    <div id="wrap" style="width: 1300px; margin: 0 auto;">
+        <div id="left_col" style="float: left; width: 900px;">
+            <canvas class="c" id="b" style="border-style: solid; border-width: 1px;"></canvas>
+        </div>
+        <div id="right_col" style="float: right; width: 400px;">
+            <ol>
+                <li>Any live cell with fewer than two live neighbours dies, as if caused by under-population.</li>
+                <li>Any live cell with two or three live neighbours lives on to the next generation.</li>
+                <li>Any live cell with more than three live neighbours dies, as if by overcrowding.</li>
+                <li>Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.</li>
+            </ol>
+            <div id="buttons" style="width: 50%; margin: 0 auto;">
+                <button id="btnNext" onclick="btnNext()">next</button>
+                <button id="btnClear" onclick="btnClear()">clear</button>
+                <button id="btnAutoRun" onclick="btnAutoRun()">auto</button>
+                <button id="btnStop" onclick="btnStop()">stop</button>
+            </div>
+            <div>
+                <ul>
+                    <li>#of live cells: <span id="liveCnt"></span></li>
+                    <li>#of generations: <span id="generationCnt"></span></li>
+            </ul>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
